@@ -1,4 +1,7 @@
-
+import os
+import sys
+import subprocess
+from pathlib import Path
 import streamlit as st
 import pandas as pd
 import plotly.express as px
@@ -80,14 +83,46 @@ div[data-testid="stPlotlyChart"] {
 
 # ---------------- LOAD FILES ----------------
 
+
+# Project directory: works locally and on Streamlit Cloud
+BASE_DIR = Path(__file__).resolve().parent
+
+DATA_PATH = BASE_DIR / "student_data.csv"
+MODEL_PATH = BASE_DIR / "student_model.pkl"
+
+
+def run_script(script_name):
+    """Run a project script on the current machine."""
+    script_path = BASE_DIR / script_name
+
+    subprocess.run(
+        [sys.executable, str(script_path)],
+        cwd=str(BASE_DIR),
+        check=True
+    )
+
+
 @st.cache_data
 def get_data():
-    return load_data("student_data.csv")
+    # Generate the dataset if it does not exist
+    if not DATA_PATH.exists():
+        run_script("generate_data.py")
+
+    return load_data(str(DATA_PATH))
 
 
 @st.cache_resource
 def get_model():
-    return joblib.load("student_model.pkl")
+    # Generate training data if necessary
+    if not DATA_PATH.exists():
+        run_script("generate_data.py")
+
+    # Train the model if it does not exist
+    if not MODEL_PATH.exists():
+        run_script("train_model.py")
+
+    return joblib.load(str(MODEL_PATH))
+
 
 
 try:
